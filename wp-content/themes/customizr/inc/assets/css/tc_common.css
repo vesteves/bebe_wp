@@ -1,5 +1,5 @@
 /*!
- * Customizr v3.4.9
+ * Customizr v3.4.13
  *
  * Licensed under the GNU General Public License v2 or later
  * http://www.gnu.org/licenses/gpl-2.0.html
@@ -4860,6 +4860,13 @@ section {
 .icon-tumblr:before {
   content: "\f214";
 }
+.icon-email:before {
+  content: "\f410";
+  font-size: 1.3em;
+}
+.social-block .icon-email {
+  top: 0.28em;
+}
 /*ICONS FOR WIDGETS*/
 .widget h3:before {
   font-family: 'genericons';
@@ -6041,6 +6048,10 @@ footer#footer .colophon .social-block a {
   text-shadow: 0 0px 0 #ffffff;
   font-size: 1.1em;
 }
+.social-block a:focus,
+.social-block a:active {
+  text-decoration: none;
+}
 /* SLIDER
     -------------------------------------------------- */
 .customizr-slide .tc-slider-notice {
@@ -6098,6 +6109,8 @@ footer#footer .colophon .social-block a {
   width: 10%;
   opacity: 0;
   color: #999;
+  z-index: 10\9;
+  /* controls visible and clickable in IE 9 and below */
 }
 .tc-slid-hover .tc-slider-controls {
   opacity: 1;
@@ -6188,13 +6201,10 @@ footer#footer .colophon .social-block a {
   bottom: 40px;
   right: 11%;
 }
-.tc_posts_slider .carousel-inner .edit-link {
+.slider.deep-edit-link.edit-link {
   right: auto;
   left: 11%;
-}
-.tc_posts_slider .customizer-link.edit-kink {
-  bottom: 5px;
-  right: 5px;
+  bottom: 20px;
 }
 /* If automatic centering is enabled */
 .carousel > .center-slides-enabled > .item > .carousel-image img {
@@ -8907,6 +8917,7 @@ li#wp-admin-bar-tc-customizr a {
     float: none;
     text-align: center;
     width: 100%;
+    clear: both;
   }
   .container.navbar-wrapper {
     margin-bottom: 0;
@@ -9301,6 +9312,10 @@ li#wp-admin-bar-tc-customizr a {
   }
   #right.widget-area:before {
     border-left: 0px;
+  }
+  .tc-no-sticky-header .navbar-wrapper,
+  .sticky-disabled .navbar-wrapper {
+    clear: both;
   }
   .navbar-inner {
     margin: -20px;

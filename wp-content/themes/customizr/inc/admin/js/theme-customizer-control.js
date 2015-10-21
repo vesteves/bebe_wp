@@ -235,6 +235,29 @@ if(this.context=f.context===b?null:f.context,this.opts.createSearchChoice&&""!==
     }
   };
 
+  /* Multiple Picker */
+  /**
+   * @constructor
+   * @augments wp.customize.Control
+   * @augments wp.customize.Class
+   */
+  api.TCMultiplePickerControl = api.Control.extend({
+    ready: function() {
+      var control  = this,
+          _select  = this.container.find('select');
+
+      //handle case when all choices become unselected
+      _select.on('change', function(e){
+        if ( 0 === $(this).find("option:selected").length ) 
+          control.setting.set([]);    
+      });
+    }    
+  });
+  $.extend( api.controlConstructor, {
+    tc_multiple_picker : api.TCMultiplePickerControl    
+  });
+
+
 
   /**
    * @constructor
@@ -346,6 +369,29 @@ if(this.context=f.context===b?null:f.context,this.opts.createSearchChoice&&""!==
   * Main control dependencies object
   */
   var _controlDependencies = {
+    //we have to show restrict blog/home posts when
+    //1. show page on front and a page of posts is selected
+    //2, show posts on front
+    'page_for_posts' : {
+       controls: [
+         'tc_blog_restrict_by_cat'    
+       ],
+       callback : function (to) {
+         return '0' !== to;  
+       },
+    },
+    'show_on_front' : {
+      controls: [
+        'tc_blog_restrict_by_cat'    
+      ],
+      callback : function (to) {
+        if ( 'posts' == to )
+          return true;
+        if ( 'page' == to )
+          return '0' !== api( _build_setId('page_for_posts') ).get() ;
+        return false;
+      },
+    },
     'tc_show_featured_pages': {
       controls: TCControlParams.FPControls,
       callback: function (to) {
@@ -605,6 +651,36 @@ if(this.context=f.context===b?null:f.context,this.opts.createSearchChoice&&""!==
         return '1' == to;
       }
     },
+    'tc_display_second_menu' : {
+      show : {
+        controls: [
+          'nav_menu_locations[secondary]',
+          'tc_second_menu_position',
+          'tc_second_menu_resp_setting',
+          'tc_menu_type',
+          'tc_menu_submenu_fade_effect',
+          'tc_menu_submenu_item_move_effect'
+        ],
+        //the menu style must be aside for secondary menu controls
+        callback: function (to, targetSetId, changedSetId) {
+          //second menu speicifics
+          if ( _.contains( ['nav_menu_locations[secondary]', 'tc_second_menu_resp_setting'], targetSetId ) )
+            return '1' == to && 'aside' == api( _build_setId( 'tc_menu_style' )).get();
+          //effects common to regular menu and second horizontal menu
+          if ( _.contains( ['tc_menu_submenu_fade_effect', 'tc_menu_submenu_item_move_effect'], targetSetId ) )
+            return ( '1' == to && 'aside' == api( _build_setId( 'tc_menu_style' )).get() ) || ('1' != to && 'aside' != api( _build_setId( 'tc_menu_style' )).get() );
+          return '1' == to;
+        }
+      }
+      // hide : {
+      //   controls: [
+      //     'tc_display_menu_label'
+      //   ],
+      //   callback: function (to) {
+      //     return 'aside' != to;
+      //   }
+      // }
+    },
     'tc_menu_style' : {
       show : {
         controls: [
@@ -612,7 +688,6 @@ if(this.context=f.context===b?null:f.context,this.opts.createSearchChoice&&""!==
           'tc_menu_submenu_fade_effect',
           'tc_menu_submenu_item_move_effect',
           'tc_menu_resp_dropdown_limit_to_viewport',
-
           'tc_display_menu_label',
           'tc_display_second_menu',
           'tc_second_menu_position',
@@ -656,36 +731,6 @@ if(this.context=f.context===b?null:f.context,this.opts.createSearchChoice&&""!==
           }
         }
       }
-    },
-    'tc_display_second_menu' : {
-      show : {
-        controls: [
-          'nav_menu_locations[secondary]',
-          'tc_second_menu_position',
-          'tc_second_menu_resp_setting',
-          'tc_menu_type',
-          'tc_menu_submenu_fade_effect',
-          'tc_menu_submenu_item_move_effect'
-        ],
-        //the menu style must be aside for secondary menu controls
-        callback: function (to, targetSetId, changedSetId) {
-          //second menu speicifics
-          if ( _.contains( ['nav_menu_locations[secondary]', 'tc_second_menu_resp_setting'], targetSetId ) )
-            return '1' == to && 'aside' == api( _build_setId( 'tc_menu_style' )).get();
-          //effects common to regular menu and second horizontal menu
-          if ( _.contains( ['tc_menu_submenu_fade_effect', 'tc_menu_submenu_item_move_effect'], targetSetId ) )
-            return ( '1' == to && 'aside' == api( _build_setId( 'tc_menu_style' )).get() ) || ('1' != to && 'aside' != api( _build_setId( 'tc_menu_style' )).get() );
-          return '1' == to;
-        }
-      }
-      // hide : {
-      //   controls: [
-      //     'tc_display_menu_label'
-      //   ],
-      //   callback: function (to) {
-      //     return 'aside' != to;
-      //   }
-      // }
     }
   };
 
@@ -1116,8 +1161,7 @@ jQuery(function ($) {
 
     /* SELECT */
     //Exclude skin
-    $('select[data-customize-setting-link]').not('select[data-customize-setting-link="tc_theme_options[tc_skin]"]')
-      .not('select[data-customize-setting-link="tc_theme_options[tc_fonts]"]')
+    $('select[data-customize-setting-link]').not('.select2')
       .each( function() {
         $(this).selecter({
         //triggers a change event on the view, passing the newly selected value + index as parameters.
@@ -1127,6 +1171,16 @@ jQuery(function ($) {
         });
     });
 
+    //Multipicker
+    //http://ivaynberg.github.io/select2/#documentation
+    $('select.tc_multiple_picker').select2({
+      closeOnSelect: false,
+      formatSelection: tcEscapeMarkup
+    });
+    function tcEscapeMarkup(obj) {
+      //trim dashes
+      return obj.text.replace(/\u2013|\u2014/g, "");
+    }
 
     //SKINS
     //http://ivaynberg.github.io/select2/#documentation
